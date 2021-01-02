@@ -5,7 +5,10 @@ The different versions are tagged.
 So you are able to select the corresponding example by selecting a specific tag.
 
 
-Example 1 Simgle output
+Example:
+
+1 Single output
+2 Timed output
 
 
 
