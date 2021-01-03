@@ -1,6 +1,10 @@
 /** idf example
  *
- * Timed hello world example with output every 5 seconds on the console
+ * Logging example
+ * Loglevel can be either configured by menuconfig or by LOG_LOCAL_LEVEL define.
+ * Also a module specific loglevel is possible, 
+ * but it must be lower or equal to the general defined loglevel. 
+ *
  *
  * Some parts are copied from the official idf examples found on 
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
@@ -13,41 +17,26 @@
  * please do not forget to mention at least my website, thanks!
 */
 
+static const char* TAG = "LoggingExample";
 
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+// Undocument this to override the log level defined by menuconfig
+// #define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#include "esp_log.h"
+#include "sdkconfig.h"
 
-// method declaration for timer callbacks
-static void timer_callback(void* arg);
+
+
 
 void app_main(void)
 {
-	//* setup timer
+	// Undocument this if you want a module specific log level
+	//esp_log_level_set(TAG,ESP_LOG_INFO);
 	
-	//** create arguments for timer task
-	const esp_timer_create_args_t periodic_timer_args = {
-			/* name of the callback function defined before */
-			.callback = &timer_callback,
-			/* name is optional, but may help identify the timer when debugging */
-			.name = "periodic"
-    };
-	
-	//** create time itself
-	esp_timer_handle_t periodic_timer;
-	ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));	
-	
-	//** start the timer periodic
-	ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 5000000));
-	
-	//** for a single shot do this
-	// ESP_ERROR_CHECK(esp_timer_start_single(periodic_timer, 5000000));
+	ESP_LOGE(TAG, "Error Message: %d", 1);
+	ESP_LOGW(TAG, "Warn Message: %d", 2 );
+	ESP_LOGI(TAG, "Information Message: %d", 3);
+	ESP_LOGD(TAG, "Debug Message: %d", 4);
+	ESP_LOGV(TAG, "Verbose Message: %d", 5);
 	
 }
 
-
-static void timer_callback(void* arg)
-{
-    // single console output 
-	printf("www.fambach.net\n");
-}

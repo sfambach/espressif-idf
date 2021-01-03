@@ -1,11 +1,9 @@
-# These are my examples to learn the espressif idf
+# Example 3 Post Debugging Messages
 
-All examples are derived from the same file and developed further. 
-The different versions are tagged. 
-So you are able to select the corresponding example by selecting a specific tag.
+This example shows how to use debugging messages.
 
+The detail degree of output messages can be controlled by menuconfig.
 
-Example 2 Timed output
 
 
 # Additional Informations
