@@ -5,7 +5,7 @@ The different versions are tagged.
 So you are able to select the corresponding example by selecting a specific tag.
 
 
-Example 2 Timed output
+Example 2 Error Handling
 
 
 # Additional Informations
