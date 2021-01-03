@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+sdkconfig.old
 
 # Object files
 *.o
