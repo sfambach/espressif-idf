@@ -2,10 +2,9 @@
 
 This example shows how to use debugging messages.
 
-The detail degree of output messages can be controlled by menuconfig.
-
+The log level of output messages can be controlled by menuconfig or by a define.
 
 
 # Additional Informations
-For more Invormations Visit http://www.fambach.net
+For more Invormations Visit http://www.fambach.net/spiel-mit-der-espressif-idf
 
