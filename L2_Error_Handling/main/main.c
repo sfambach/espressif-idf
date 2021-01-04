@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <esp_system.h>
+#include <esp_err.h>
 
 void app_main(void)
 {
@@ -23,8 +24,19 @@ void app_main(void)
 	//* setup timer
 	printf("Simply give ok code to check function and see whats happend\n");	
 	ESP_ERROR_CHECK(ESP_OK);
-	printf("And hopefully you see nothing, try ESP_ERR_INVALID_MAC \n");
-	ESP_ERROR_CHECK(ESP_ERR_INVALID_MAC);
+	
+	printf("And hopefully you see nothing between this and the last output\n");
+	
+		
+	printf(esp_err_to_name(0x106));
+	 
+	char text[30];
+	esp_err_to_name_r(0x105,text,30);
+	printf(text);
+	
+	
+	// undocument this to produce an error
+	//ESP_ERROR_CHECK(ESP_ERR_INVALID_MAC);
 	
 }
 

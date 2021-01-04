@@ -1,0 +1,10 @@
+menu "L5_Menuconfig"
+
+    config OUTPUT_TEXT
+        string "Output Text"
+        default "www.fambach.net!"
+        help
+            Enter the text, that will be shown in the program.
+
+
+endmenu
