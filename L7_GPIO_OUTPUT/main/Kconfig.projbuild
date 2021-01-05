@@ -1,0 +1,17 @@
+menu "L6_GPIO"
+
+    config LED_BLINK_DELAY_MS
+        int "Delay in mSeconds"
+        default "500"
+        help
+            Enter blink intevall, eg 500ms on + 500ms off .... 
+			
+	config LED_PIN
+		int "LED pin"
+		range 0 34
+        default 5
+		help 
+			GPIO Pin to which the LED is conneted
+
+
+endmenu

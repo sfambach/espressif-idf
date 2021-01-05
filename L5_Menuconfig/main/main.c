@@ -1,6 +1,6 @@
 /** idf example
  *
- * Timed hello world example with output every 5 seconds on the console
+ * Example 5 for custom configuration for menuconfig
  *
  * Some parts are copied from the official idf examples found on 
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
