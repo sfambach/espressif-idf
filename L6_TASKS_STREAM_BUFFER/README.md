@@ -1,5 +1,5 @@
 # Example 6 Tasks
-Playing with tasks.
+Playing with tasks and stream buffer.
 
 
 # Additional Informations
