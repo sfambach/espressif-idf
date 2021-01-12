@@ -1,7 +1,9 @@
 /** idf example
  *
- * This should be an example for tasks ... 
- * this example is not finished jet
+ * Playing with tasks and message buffer.
+ * This example uses two taks and a message buffer to transfer messages from one task to another in a safe manner.
+ * Only one reader and one writer is allowed, in case of more than one writer the send function should be part of 
+ * a critical ares safed by a semaphor or mutex
  *
  * Some parts are copied from the official idf examples found on 
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
@@ -20,7 +22,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "freertos/event_groups.h"
+#include "freertos/message_buffer.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -30,97 +32,127 @@
 static const char* TAG = "L6_Task";
 
 // event groupe things
-static TaskHandle_t xHandles[5];
-static EventGroupHandle_t xEventGroup;
-static EventBits_t uxBits;
+static TaskHandle_t senderHandle;
+static TaskHandle_t receiverHandle;
 
-#define BIT_0    ( 1 << 0 )
-#define BIT_1    ( 1 << 1 )
-#define BIT_2    ( 1 << 2 )
-#define BIT_3    ( 1 << 3 )
-#define BIT_4    ( 1 << 4 )
+uint16_t recDelay = 500;
+
+
+#define MESSAGE_BUFFER_SIZE 1000
+static MessageBufferHandle_t bufferHandle;
+TickType_t timeOut;
+
+
+
+// some messages ... 
+static const char* sendString[12] = {
+"Sore was I ere I saw Eros",
+"A man, a plan, a canal -- Panama",
+"Never a foot too far, even.",
+"Euston saw I was not Sue.",
+"Live on evasions? No, I save no evil.",
+"Red Roses run no risk, sir, on nurses order.",
+"Salisbury moor, sir, is roomy. Rub Silas.",
+"Marge, let's went. I await news telegram.",
+"A new order began, a more Roman age bred Rowena.",
+"I, man, am regal; a German am I.",
+"Tracy, no panic in a pony-cart.",
+"Egad! Loretta has Adams as mad as a hatter. Old age!"};
 
 
 /** tasks 
  *  Simply produce some output
 */
-static void task(void* arg)
+static void send(void* arg)
 {
-	// get back task index
-    uint32_t task_index = (uint32_t*) arg;
+	while (1) {
+		size_t xBytesSent;
 		
-	// run at minimum 2 times 
-	int count = 2 +  esp_random()%10;
-			
-	for(int i = 0; i < count ; i++){
-				
-		ESP_LOGD(TAG,"Task %i (run %i / %i )", task_index+1, i, count);
+		for(int i = 0 ; i < 12; i++){
+			 
+			xBytesSent =  xMessageBufferSend( bufferHandle, ( void * ) sendString[i], strlen( sendString[i]), timeOut );
+			if(xBytesSent < 1){
+				ESP_LOGE(TAG, "Error while sending only sent %i o %i bytes",xBytesSent,strlen( sendString[i] ));
+				recDelay -= 50;
+			} else {
+				ESP_LOGI(TAG,"Send Bytes %i Content: %s" ,xBytesSent, sendString[i] );
+			}
 		
-		// random delay 250 - 500 ms
-		int delay = 250 +  esp_random()%250;
-		
-		vTaskDelay(delay);
+			// delay 100 - 500 ms					
+			vTaskDelay(pdMS_TO_TICKS(100+esp_random()%400));				
+		}
 	}
-	
-	uxBits = xEventGroupSetBits(
-                         xEventGroup,    // The event group being updated.
-                        (1<<task_index)); // The bits being set.
-	
 	// Do not forgett to stop the task.
 	// If delete is missing an exception will be thrown
-	ESP_LOGD(TAG,"Stopping %s ", pcTaskGetName(xHandles[task_index]));
-	vTaskDelete( xHandles[task_index] );
+	ESP_LOGD(TAG,"Stopping sender");
+	vTaskDelete( senderHandle);
 	
+}
+
+static void receive(void* arg){
+	
+	char rxBuffer[50];
+	while(1){
+		
+		int length = xMessageBufferNextLengthBytes(bufferHandle);
+		size_t xReceivedBytes = xMessageBufferReceive( bufferHandle,
+											( void * ) rxBuffer,
+											length,
+											timeOut );
+		
+		// fix null termination		
+		rxBuffer[length]='\0';
+		
+		if(xReceivedBytes > 0 ){ 
+			ESP_LOGI(TAG,"Received Bytes %i Content: %s" ,xReceivedBytes,(char*)rxBuffer);
+		} else {
+			ESP_LOGW(TAG,"No data received");
+		}
+		
+		// delay 500 - 1000 ms
+		vTaskDelay(pdMS_TO_TICKS(recDelay+esp_random()%500));
+	}
+
+	// Do not forgett to stop the task.
+	// If delete is missing an exception will be thrown
+	ESP_LOGD(TAG,"Stopping receiver ");
+	vTaskDelete( receiverHandle);
 }
 
 
 void app_main(void)
 {
-	
 	//Allow other core to finish initialization
     vTaskDelay(pdMS_TO_TICKS(100));
+	timeOut = pdMS_TO_TICKS( 500 );
 	
 	// activate random number genneration without wifi
 	// deactivate before the use of wifi or I2C
 	ESP_LOGD(TAG,"Init Random without RF");
 	bootloader_random_enable();
+	
+	// create stream buffer
+	ESP_LOGD(TAG,"Creating stream buffer!");
+
+	bufferHandle = xMessageBufferCreate( MESSAGE_BUFFER_SIZE);
+
+        if( bufferHandle == NULL )
+        {
+           ESP_LOGE(TAG,"FAILED to create buffer!");
+        }
+        else
+        {
+           ESP_LOGI(TAG,"Buffer created");
+        }
+	
+	ESP_LOGD(TAG,"Creating receiver");
+	xTaskCreate(receive, "Receiver", 2048, NULL, 10, &receiverHandle);
+	configASSERT( receiverHandle );
+	
 				
-	//* init switches and set interupt routines
-	for(uint32_t i = 0; i <5;i++){
-			
-		char buf [20];
-		sprintf(buf, "Task_%i",i+1);
-			
-		ESP_LOGD(TAG,"Creating %s", buf);
-		
-		//start gpio task to handle the buttons
-		xTaskCreate(task, buf, 2048, i, 10, &xHandles[i]);
-			
-	}
-		
-	xEventGroup = xEventGroupCreate();
-	if(xEventGroup == NULL){
-		ESP_LOGE(TAG,"Can not create event group");
-	}
-	xEventGroupClearBits(xEventGroup, 0xff);	
-	
-	uxBits = xEventGroupWaitBits(
-                 xEventGroup,    // The event group being tested.
-                 BIT_0 | BIT_1| BIT_2| BIT_3 | BIT_4,  // The bits within the event group to wait for.
-                 pdFALSE,         // BIT_0 ... and BIT_4 should be cleared before returning.
-                 pdTRUE,         // wait for all bits
-                 portMAX_DELAY ); // Wait a maximum of 100ms for either bit to be set.
-	
-	if( xEventGroup == NULL )
-	{
-		ESP_LOGE(TAG,"Event groupe not created");
-	} else if(  (uxBits & ( BIT_0 | BIT_1| BIT_2| BIT_3 | BIT_4) ) == ( BIT_0 | BIT_1| BIT_2| BIT_3 | BIT_4 ) )
-    {
-        ESP_LOGI(TAG,"Program finshed successfull");
-    } else {
-        ESP_LOGW(TAG,"Timeout");
-    }
+	ESP_LOGD(TAG,"Creating sender");
+	xTaskCreate(send, "Sender", 2048, NULL, 10, &senderHandle);	
+	configASSERT( senderHandle );
 	
 }
-
 

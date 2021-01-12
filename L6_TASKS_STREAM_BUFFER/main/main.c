@@ -1,7 +1,10 @@
 /** idf example
  *
- * This should be an example for tasks ... 
- * this example is not finished jet
+ * Tasks and Stream buffer Example
+ * Two tasks, one is writing to the stream buffer and one is reading from stream buffer.
+ * The writing task is faster than the reader. This has an build in errors, 
+ * when the buffer is full the writer cannot write to the buffer and gets a timeout for writing. 
+ * This errors can be prevented by increasing the buffer size or the timeout of the writer.
  *
  * Some parts are copied from the official idf examples found on 
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
@@ -35,9 +38,7 @@ static TaskHandle_t receiverHandle;
 static StreamBufferHandle_t streamBuffer;
 TickType_t x5s;
 
-static const char sendString[40] = "Go hang a salami - I'm a Lasagna Hog!\n";
-
-
+static const char sendString[40] = "Go hang a salami - I'm a Lasagna Hog!";
 
 
 /** tasks 
@@ -45,15 +46,19 @@ static const char sendString[40] = "Go hang a salami - I'm a Lasagna Hog!\n";
 */
 static void send(void* arg)
 {
-	size_t xBytesSent;
+	while (1) {
+		size_t xBytesSent;
 
 		xBytesSent =  xStreamBufferSend( streamBuffer, ( void * ) sendString , sizeof( sendString ), x5s );
 		if(xBytesSent != sizeof( sendString )){
 			ESP_LOGE(TAG, "Error while sending only sent %i o %i bytes",xBytesSent,sizeof( sendString ));
+		} else {
+			ESP_LOGI(TAG,"Send Bytes %i" ,xBytesSent);
 		}
-							
-						
-
+		
+		// delay 100 - 500 ms					
+		vTaskDelay(pdMS_TO_TICKS(100+esp_random()%400));				
+	}
 	// Do not forgett to stop the task.
 	// If delete is missing an exception will be thrown
 	ESP_LOGD(TAG,"Stopping sender");
@@ -64,16 +69,23 @@ static void send(void* arg)
 static void receive(void* arg){
 	
 	char rxBuffer[40];
-
+	while(1){
 		size_t xReceivedBytes = xStreamBufferReceive( streamBuffer,
 											( void * ) rxBuffer,
 											sizeof( rxBuffer ),
 											x5s );
-		if(xReceivedBytes > 0 ){ 
-			ESP_LOGI(TAG,"Rec. Bytes %i Content: %s" ,xReceivedBytes,rxBuffer);
+											
+		if( xReceivedBytes < 40){
+			ESP_LOGI(TAG,"ERROR Received Bytes %i Content: %s" ,xReceivedBytes,rxBuffer);
+		} else if(xReceivedBytes > 0 ){ 
+			ESP_LOGI(TAG,"Received Bytes %i Content: %s" ,xReceivedBytes,rxBuffer);
 		} else {
 			ESP_LOGW(TAG,"No data received");
 		}
+	
+		// delay 500 - 1000 ms
+		vTaskDelay(pdMS_TO_TICKS(500+esp_random()%1000));
+	}
 
 	// Do not forgett to stop the task.
 	// If delete is missing an exception will be thrown
@@ -87,7 +99,7 @@ void app_main(void)
 	
 	//Allow other core to finish initialization
     vTaskDelay(pdMS_TO_TICKS(100));
-	x5s = pdMS_TO_TICKS( 5000 );
+	x5s = pdMS_TO_TICKS( 500 );
 
 	
 	// activate random number genneration without wifi
