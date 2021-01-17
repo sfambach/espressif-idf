@@ -1,5 +1,7 @@
 # Example 6 Tasks
-Playing with tasks.
+Playing with Hooks.
+
+idle/tick Hooks, they are processed when there is nothing to do for the cpu.
 
 
 # Additional Informations

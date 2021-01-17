@@ -1,7 +1,6 @@
 /** idf example
  *
- * This should be an example for tasks ... 
- * this example is not finished jet
+ * Tasks and queues
  *
  * Some parts are copied from the official idf examples found on 
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/
@@ -103,12 +102,6 @@ void app_main(void)
 	//Allow other core to finish initialization
     vTaskDelay(pdMS_TO_TICKS(100));
 	
-	// activate random number genneration without wifi
-	// deactivate before the use of wifi or I2C
-	ESP_LOGD(TAG,"Init Random without RF");
-	bootloader_random_enable();
-				
-			
 	ESP_LOGI(TAG,"Create write task");
 	xTaskCreate(write_task, "Write Task", 2048, NULL , 10, &writeTaskHandle);
 	configASSERT( writeTaskHandle );
